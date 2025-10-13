@@ -361,7 +361,7 @@
             })
             .catch(error => {
                 console.error('检查库存时出错:', error);
-                stockStatusElement.textContent = "库存状态: 检查失败";
+                stockStatusElement.textContent = "库存状态: 检查失败"+error;
                 stockStatusElement.className = "stock-status out-of-stock";
                 statusElement.textContent = `检查失败 - ${new Date().toLocaleTimeString()}`;
                 timerValue = 10;
@@ -431,3 +431,4 @@
 </body>
 
 </html>
+
