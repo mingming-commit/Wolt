@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolt库存检查器</title>
+    <style>
+        /* 保持之前的样式不变 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-top: 10px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #0066ff;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: #86868b;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        .product-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .product-image {
+            width: 80px;
+            height: 80px;
+            background-color: #f2f2f7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            overflow: hidden;
+        }
+        
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .product-details {
+            flex: 1;
+        }
+        
+        .product-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .product-description {
+            font-size: 14px;
+            color: #86868b;
+            margin-bottom: 8px;
+        }
+        
+        .product-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #0066ff;
+        }
+        
+        .status-section {
+            text-align: center;
+            padding: 15px 0;
+        }
+        
+        .status-label {
+            font-size: 14px;
+            color: #86868b;
+            margin-bottom: 8px;
+        }
+        
+        .status {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .status.in-stock {
+            color: #34c759;
+        }
+        
+        .status.out-of-stock {
+            color: #ff3b30;
+        }
+        
+        .status.checking {
+            color: #007aff;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 122, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #007aff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .last-checked {
+            font-size: 13px;
+            color: #86868b;
+            margin-top: 5px;
+        }
+        
+        .button {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background-color: #007aff;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+            margin-top: 20px;
+            transition: background-color 0.2s;
+        }
+        
+        .button:hover {
+            background-color: #0056cc;
+        }
+        
+        .button:active {
+            background-color: #004299;
+        }
+        
+        .auto-check {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            font-size: 15px;
+        }
+        
+        .auto-check input {
+            margin-right: 8px;
+        }
+        
+        .info-box {
+            background-color: #f2f2f7;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #515154;
+        }
+        
+        .info-box h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #1d1d1f;
+        }
+        
+        .info-box ul {
+            padding-left: 20px;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 13px;
+            color: #86868b;
+        }
+        
+        .error-message {
+            color: #ff3b30;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        /* iPhone优化样式 */
+        @media (max-width: 400px) {
+            body {
+                padding: 15px;
+            }
+            
+            .card {
+                padding: 16px;
+            }
+            
+            .product-image {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .product-name {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Wolt库存检查器</h1>
+            <p class="subtitle">自动检查商品库存状态</p>
+        </header>
+        
+        <div class="card">
+            <div class="product-info">
+                <div class="product-image">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15 5V7M15 11V13M15 17V19M5 5C3.89543 5 3 5.89543 3 7V10C3 11.1046 3.89543 12 5 12H19C20.1046 12 21 11.1046 21 10V7C21 5.89543 20.1046 5 19 5H5Z" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M7 19H17M12 15V19" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="product-details">
+                    <div class="product-name">Wolt Market Stockholm City - Blandkasse</div>
+                    <div class="product-description">Blandad varukasse från Wolt Market</div>
+                    <div class="product-price">Pris: Varierar</div>
+                </div>
+            </div>
+            
+            <div class="status-section">
+                <div class="status-label">LAGERSTATUS</div>
+                <div class="status checking">
+                    <span class="loading"></span>Kontrollerar...
+                </div>
+                <div class="last-checked">Senast kontrollerad: <span id="last-checked">Aldrig</span></div>
+                <div class="error-message" id="error-message"></div>
+            </div>
+            
+            <button class="button" id="check-button">Kontrollera nu</button>
+            
+            <div class="auto-check">
+                <input type="checkbox" id="auto-check" checked>
+                <label for="auto-check">Kontrollera automatiskt var 30:e sekund</label>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h3>Hur fungerar det?</h3>
+            <ul>
+                <li>Denna sida kontrollerar automatiskt lagersaldo för Wolt Market Stockholm City - Blandkasse</li>
+                <li>Status uppdateras var 30:e sekund när automatisk kontroll är aktiverad</li>
+                <li>Använder CORS proxy för att kringgå begränsningar</li>
+                <li>Vid fel eller problem visas ett felmeddelande</li>
+            </ul>
+        </div>
+        
+        <footer>
+            <p>Denna sida är inte associerad med Wolt. Skapad för demonstrationsändamål.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusElement = document.querySelector('.status');
+            const lastCheckedElement = document.getElementById('last-checked');
+            const checkButton = document.getElementById('check-button');
+            const autoCheckCheckbox = document.getElementById('auto-check');
+            const errorMessageElement = document.getElementById('error-message');
+            
+            let checkInterval;
+            const CHECK_INTERVAL = 30000; // 30秒
+            
+            // 使用CORS代理的URL
+            const WOLT_URL = 'https://wolt.com/sv/swe/stockholm/venue/wolt-market-stockholm-city/blandkasse-itemid-679ff93d461c6e75bfb71b83';
+            const CORS_PROXIES = [
+                'https://api.allorigins.win/raw?url=',
+                'https://cors-anywhere.herokuapp.com/',
+                'https://corsproxy.io/?'
+            ];
+            
+            let currentProxyIndex = 0;
+            
+            // 初始检查
+            checkStock();
+            
+            // 设置自动检查
+            setupAutoCheck();
+            
+            checkButton.addEventListener('click', function() {
+                checkStock();
+            });
+            
+            autoCheckCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    setupAutoCheck();
+                } else {
+                    clearInterval(checkInterval);
+                }
+            });
+            
+            function setupAutoCheck() {
+                clearInterval(checkInterval);
+                if (autoCheckCheckbox.checked) {
+                    checkInterval = setInterval(checkStock, CHECK_INTERVAL);
+                }
+            }
+            
+            async function checkStock() {
+                statusElement.innerHTML = '<span class="loading"></span>Kontrollerar...';
+                statusElement.className = 'status checking';
+                errorMessageElement.textContent = '';
+                
+                try {
+                    const proxyUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(WOLT_URL);
+                    
+                    const response = await fetch(proxyUrl, {
+                        method: 'GET',
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const html = await response.text();
+                    const isInStock = analyzeStockStatus(html);
+                    
+                    if (isInStock) {
+                        statusElement.textContent = 'I LAGER';
+                        statusElement.className = 'status in-stock';
+                    } else {
+                        statusElement.textContent = 'SLUT I LAGER';
+                        statusElement.className = 'status out-of-stock';
+                    }
+                    
+                    const now = new Date();
+                    lastCheckedElement.textContent = now.toLocaleTimeString('sv-SE');
+                    
+                } catch (error) {
+					statusElement.textContent = error;
+                    console.error('Error checking stock:', error);
+                    errorMessageElement.textContent = `Fel vid kontroll: ${error.message}. Försöker nästa proxy...`;
+                    
+                    // 切换到下一个代理
+                    currentProxyIndex = (currentProxyIndex + 1) % CORS_PROXIES.length;
+                    
+                    // 如果所有代理都失败，使用模拟数据
+                    if (currentProxyIndex === 0) {
+                        setTimeout(() => {
+                            simulateStockCheck();
+                        }, 1000);
+                    }
+                }
+            }
+            
+            function analyzeStockStatus(html) {
+                // 分析HTML内容来判断库存状态
+                // 这里是一些可能的判断逻辑：
+                
+                // 1. 检查"库存不足"或"缺货"相关文本
+                const outOfStockIndicators = [
+                    'out of stock',
+                    'slut i lager',
+                    'inte tillgänglig',
+                    'not available',
+                    'sold out'
+                ];
+                
+                // 2. 检查"加入购物车"按钮是否存在
+                const inStockIndicators = [
+                    'add to cart',
+                    'lägg i varukorg',
+                    'köp',
+                    'buy now'
+                ];
+                
+                const lowerCaseHtml = html.toLowerCase();
+                
+                // 如果有缺货指示器，返回false
+                for (const indicator of outOfStockIndicators) {
+                    if (lowerCaseHtml.includes(indicator)) {
+                        return false;
+                    }
+                }
+                
+                // 如果有库存指示器，返回true
+                for (const indicator of inStockIndicators) {
+                    if (lowerCaseHtml.includes(indicator)) {
+                        return true;
+                    }
+                }
+                
+                // 默认假设有库存
+                return true;
+            }
+            
+            function simulateStockCheck() {
+                // 模拟检查作为后备方案
+                setTimeout(() => {
+                    const isInStock = Math.random() > 0.5;
+                    
+                    if (isInStock) {
+                        statusElement.textContent = 'I LAGER (simulerad)';
+                        statusElement.className = 'status in-stock';
+                    } else {
+                        statusElement.textContent = 'SLUT I LAGER (simulerad)';
+                        statusElement.className = 'status out-of-stock';
+                    }
+                    
+                    const now = new Date();
+                    lastCheckedElement.textContent = now.toLocaleTimeString('sv-SE');
+                    
+                    errorMessageElement.textContent = 'Använder simulerad data på grund av proxy-fel';
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
