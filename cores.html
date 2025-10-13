@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolt库存监控</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .status-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .status-title {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .timer {
+            font-size: 3rem;
+            font-weight: 700;
+            margin: 20px 0;
+            color: #ffd166;
+        }
+        
+        .url-display {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .primary-btn {
+            background: #4cc9f0;
+            color: #1a1a2e;
+        }
+        
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .alert-btn {
+            background: #ef476f;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-box {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .info-box ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .info-box li {
+            margin-bottom: 8px;
+        }
+        
+        .stock-status {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .in-stock {
+            background: rgba(76, 201, 240, 0.3);
+            border: 1px solid #4cc9f0;
+        }
+        
+        .out-of-stock {
+            background: rgba(239, 71, 111, 0.3);
+            border: 1px solid #ef476f;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @media (max-width: 500px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .timer {
+                font-size: 2.5rem;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wolt库存监控</h1>
+        <p class="subtitle">自动检测库存状态，有货时发出提醒</p>
+        
+        <div class="status-box">
+            <div class="status-title">下次检查:</div>
+            <div class="timer" id="timer">10</div>
+            <div>状态: <span id="status">运行中</span></div>
+            <div class="stock-status out-of-stock" id="stock-status">
+                库存状态: 检测中...
+            </div>
+        </div>
+        
+        <div class="url-display" id="url-display">
+            加载中...
+        </div>
+        
+        <div class="buttons">
+            <button class="primary-btn" id="refresh-now">立即检查</button>
+            <button class="secondary-btn" id="toggle-auto">暂停自动检查</button>
+            <button class="secondary-btn" id="test-alert">测试提醒</button>
+        </div>
+        
+        <div class="info-box">
+            <p><strong>工作原理:</strong></p>
+            <ul>
+                <li>每10秒自动检查Wolt页面</li>
+                <li>检测页面是否包含"Slut i lager"文本</li>
+                <li>如果商品有库存(不包含"Slut i lager")，会发出声音提醒</li>
+                <li>添加时间戳参数绕过缓存</li>
+                <li>针对iPhone优化显示</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const WOLT_URL = "https://wolt.com/sv/swe/stockholm/venue/wolt-market-stockholm-city/blandkasse-itemid-679ff93d461c6e75bfb71b83";
+        const CORS_PROXIES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://cors-anywhere.herokuapp.com/',
+            'https://corsproxy.io/?'
+        ];
+            
+        const REFRESH_INTERVAL = 10000; // 10 seconds in milliseconds
+        const STOCK_OUT_TEXT = "Slut i lager";
+        let timerValue = 10;
+        let autoRefreshActive = true;
+        let countdownInterval;
+        let lastStockStatus = null;
+        
+        // DOM Elements
+        const timerElement = document.getElementById('timer');
+        const statusElement = document.getElementById('status');
+        const urlDisplayElement = document.getElementById('url-display');
+        const stockStatusElement = document.getElementById('stock-status');
+        const refreshNowButton = document.getElementById('refresh-now');
+        const toggleAutoButton = document.getElementById('toggle-auto');
+        const testAlertButton = document.getElementById('test-alert');
+        
+        // Function to generate timestamp
+        function generateTimestamp() {
+            const now = new Date();
+            return now.getFullYear() + 
+                   String(now.getMonth() + 1).padStart(2, '0') + 
+                   String(now.getDate()).padStart(2, '0') + 
+                   String(now.getHours()).padStart(2, '0') + 
+                   String(now.getMinutes()).padStart(2, '0') + 
+                   String(now.getSeconds()).padStart(2, '0');
+        }
+        
+        // Function to create the URL with timestamp
+        function createUrl() {
+            return `${WOLT_URL}?t=${generateTimestamp()}`;
+        }
+        
+        // Function to trigger browser notification and sound
+        function triggerAlert(message) {
+            // 使用浏览器通知
+            if ("Notification" in window) {
+                if (Notification.permission === "granted") {
+                    new Notification("Wolt库存提醒", {
+                        body: message,
+                        icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234cc9f0'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E"
+                    });
+                } else if (Notification.permission !== "denied") {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") {
+                            new Notification("Wolt库存提醒", {
+                                body: message,
+                                icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234cc9f0'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E"
+                            });
+                        }
+                    });
+                }
+            }
+            
+            // 使用Web Audio API播放声音
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 800;
+                gainNode.gain.value = 0.5;
+                
+                oscillator.start();
+                
+                // 播放三声短促的提示音
+                setTimeout(() => {
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                    setTimeout(() => {
+                        gainNode.gain.value = 0.5;
+                        setTimeout(() => {
+                            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                            setTimeout(() => {
+                                gainNode.gain.value = 0.5;
+                                setTimeout(() => {
+                                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.4);
+                                    oscillator.stop(audioContext.currentTime + 0.4);
+                                }, 100);
+                            }, 300);
+                        }, 100);
+                    }, 300);
+                }, 100);
+            } catch (error) {
+                console.error("无法播放声音:", error);
+            }
+            
+            // 如果页面可见，还可以使用alert作为备选方案
+            if (document.visibilityState === 'visible') {
+                alert(message);
+            }
+        }
+        
+        // Function to check stock status
+        function checkStockStatus() {
+            const url = createUrl();
+            
+            // Update the display
+            urlDisplayElement.textContent = url;
+			
+            const proxyUrl = CORS_PROXIES[currentProxyIndex] + encodeURIComponent(WOLT_URL);
+            
+            // 使用fetch API获取页面内容
+            fetch(proxyUrl, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('网络响应不正常');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // 检查是否包含缺货文本
+                const isOutOfStock = html.includes(STOCK_OUT_TEXT);
+                
+                // 更新库存状态显示
+                if (isOutOfStock) {
+                    stockStatusElement.textContent = "库存状态: 缺货";
+                    stockStatusElement.className = "stock-status out-of-stock";
+                } else {
+                    stockStatusElement.textContent = "库存状态: 有货!";
+                    stockStatusElement.className = "stock-status in-stock";
+					triggerAlert("商品现在有货了！快去Wolt查看！");
+                    
+                    // 如果状态从缺货变为有货，触发提醒
+                    if (lastStockStatus === true) {
+                        triggerAlert("商品现在有货了！快去Wolt查看！");
+                    }
+                }
+                
+                // 记录上一次的库存状态
+                lastStockStatus = isOutOfStock;
+                
+                // 更新状态和时间
+                statusElement.textContent = `已检查 - ${new Date().toLocaleTimeString()}`;
+                timerValue = 10;
+                timerElement.textContent = timerValue;
+            })
+            .catch(error => {
+                console.error('检查库存时出错:', error);
+                stockStatusElement.textContent = "库存状态: 检查失败";
+                stockStatusElement.className = "stock-status out-of-stock";
+                statusElement.textContent = `检查失败 - ${new Date().toLocaleTimeString()}`;
+                timerValue = 10;
+                timerElement.textContent = timerValue;
+            });
+        }
+        
+        // Function to start the countdown
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            
+            countdownInterval = setInterval(() => {
+                if (autoRefreshActive) {
+                    timerValue--;
+                    timerElement.textContent = timerValue;
+                    
+                    if (timerValue <= 0) {
+                        checkStockStatus();
+                    }
+                }
+            }, 1000);
+        }
+        
+        // Event Listeners
+        refreshNowButton.addEventListener('click', () => {
+            checkStockStatus();
+        });
+        
+        toggleAutoButton.addEventListener('click', () => {
+            autoRefreshActive = !autoRefreshActive;
+            
+            if (autoRefreshActive) {
+                toggleAutoButton.textContent = '暂停自动检查';
+                statusElement.textContent = '运行中';
+                startCountdown();
+            } else {
+                toggleAutoButton.textContent = '恢复自动检查';
+                statusElement.textContent = '已暂停';
+                clearInterval(countdownInterval);
+            }
+        });
+        
+        testAlertButton.addEventListener('click', () => {
+            triggerAlert("这是测试提醒！当商品有货时，您会收到类似提醒。");
+        });
+        
+        // Initialize
+        function init() {
+            // 请求通知权限
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
+            
+            // Display initial URL
+            urlDisplayElement.textContent = createUrl();
+            
+            // Start the countdown
+            startCountdown();
+            
+            // Do an initial check
+            checkStockStatus();
+        }
+        
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
